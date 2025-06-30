@@ -36,3 +36,5 @@ out/
 ### VS Code ###
 .vscode/
 /src/main/resources/properties/env*
+# /src/main/resources/ 하위 모든 .yml 파일 무시
+/src/main/resources/**/*.yml

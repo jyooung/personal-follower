@@ -1,0 +1,11 @@
+services:
+  mongodb:
+    image: mongo
+    container_name: mongodb
+    ports:
+      - 27017:27017
+    volumes:
+      - ./mongo-data:/data/db
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=pfollower
+      - MONGO_INITDB_ROOT_PASSWORD=pfollower1234

@@ -68,7 +68,8 @@ public class HistoryService {
             while (rs.next()) {
                 String url = rs.getString("url");
                 // 유튜브 주소만 필터링
-                if (url.contains("youtube.com") || url.contains("youtu.be")) {
+                // 유튜브 비디오 URL인지 확인
+                if ((url.contains("youtube.com/watch?v=") || url.contains("youtu.be/"))) {
                     long visitTimeMicroSec = rs.getLong("visit_time");
                     // 크롬 시간 형식을 일반 시간(ms)로 변환
                     long visitTimeMillis = (visitTimeMicroSec / 1000L) - 11644473600000L;

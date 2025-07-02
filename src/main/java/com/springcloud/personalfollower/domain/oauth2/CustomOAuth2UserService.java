@@ -1,7 +1,9 @@
 package com.springcloud.personalfollower.domain.oauth2;
 
 import com.springcloud.personalfollower.domain.user.User;
+import com.springcloud.personalfollower.dto.SessionUser;
 import com.springcloud.personalfollower.repository.UserRepository;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
@@ -16,6 +18,7 @@ import java.util.Map;
 public class CustomOAuth2UserService implements OAuth2UserService<OidcUserRequest, OidcUser> {
 
     private final UserRepository userRepository;
+    private final HttpSession httpSession;
 
     @Override
     public OidcUser loadUser(OidcUserRequest userRequest) {
@@ -48,7 +51,8 @@ public class CustomOAuth2UserService implements OAuth2UserService<OidcUserReques
                         return null;
                     }
                 });
-
+        // 세션에 사용자 정보 저장
+        httpSession.setAttribute("user", new SessionUser(user));
         // 반환: Spring Security에서 인증된 사용자로 처리
         return oidcUser;
     }

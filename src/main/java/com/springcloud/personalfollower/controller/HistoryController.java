@@ -21,7 +21,7 @@ public class HistoryController {
     @GetMapping("/extract")
     public ResponseEntity<ResponseDto<String>> extractHistory() {
         try {
-            historyService.extractHistory();
+            historyService.runYoutubeExtraction();
             return ResponseEntity.status(HttpStatus.OK).body(ResponseDto.success("success"));
 
         } catch (Exception e){

@@ -11,6 +11,11 @@ public class SessionUser implements Serializable {
     private final String name;
     private final String email;
 
+    /**
+     * Constructs a SessionUser by extracting the name and email from the given User.
+     *
+     * @param user the User object from which to retrieve session user information
+     */
     public SessionUser(User user) {
         this.name = user.getName();
         this.email = user.getEmail();

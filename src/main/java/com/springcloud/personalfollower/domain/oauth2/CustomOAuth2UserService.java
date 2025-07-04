@@ -20,6 +20,14 @@ public class CustomOAuth2UserService implements OAuth2UserService<OidcUserReques
     private final UserRepository userRepository;
     private final HttpSession httpSession;
 
+    /**
+     * Loads the authenticated user's information from the OAuth2 provider, persists the user if not already present, and stores user details in the HTTP session.
+     *
+     * Retrieves user attributes from the OpenID Connect provider, checks for an existing user in the database by email, and creates a new user with default role if necessary. The user information is then wrapped in a session DTO and stored in the HTTP session. Returns the authenticated OidcUser for further processing by Spring Security.
+     *
+     * @param userRequest the OIDC user request containing authentication and provider details
+     * @return the authenticated OidcUser object
+     */
     @Override
     public OidcUser loadUser(OidcUserRequest userRequest) {
         // Google에서 받은 사용자 정보 객체

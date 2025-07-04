@@ -34,6 +34,12 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
+    // Spring Security (기본 보안)
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+
+    // OAuth 로그인
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+
     // SQLite JDBC 라이브러리
     implementation 'org.xerial:sqlite-jdbc:3.45.2.0'
 

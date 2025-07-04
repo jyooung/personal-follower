@@ -1,7 +1,7 @@
 package com.springcloud.personalfollower.controller;
 
 import com.springcloud.personalfollower.common.response.ResponseDto;
-import com.springcloud.personalfollower.service.HistoryService;
+import com.springcloud.personalfollower.service.HistoryYtDlpService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,15 +13,16 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @AllArgsConstructor
 @RequestMapping("/api/history")
 public class HistoryController {
-    private final HistoryService historyService;
+    private final HistoryYtDlpService historyYtDlpService;
     /**
      * 브라우저 히스토리를 추출
      * @return 성공 또는 실패 메시지
+     * historyYtDlpService yt-dlp 버전 (이후 전환)
      */
     @GetMapping("/extract")
     public ResponseEntity<ResponseDto<String>> extractHistory() {
         try {
-            historyService.runYoutubeExtraction();
+            historyYtDlpService.extractHistory();
             return ResponseEntity.status(HttpStatus.OK).body(ResponseDto.success("success"));
 
         } catch (Exception e){

@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-public class HistoryService {
+public class HistoryYtDlpService {
 
     public static final String ORIGINAL_HISTORY_PATH;
     public static final String COPIED_HISTORY_PATH;

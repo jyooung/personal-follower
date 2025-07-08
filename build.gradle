@@ -45,6 +45,10 @@ dependencies {
 
     // mongoDB
     implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
+
+    // 명사분석 OpenKoreanText(내부에서 스칼라 사용 설치 필요)
+    implementation 'org.openkoreantext:open-korean-text:2.1.0'
+    implementation 'org.scala-lang:scala-library:2.12.10'
 }
 
 tasks.named('test') {

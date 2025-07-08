@@ -19,7 +19,7 @@ public class YoutubeVideoMetadata {
     private String userId;
     private String title;
     private List<String> tags;
-    private String categoryId;
+
     private String publishedAt;
     private String thumbnailUrl;
     private String description;

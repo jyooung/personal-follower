@@ -1,6 +1,7 @@
 package com.springcloud.personalfollower.service;
 
 import com.springcloud.personalfollower.dto.request.YoutubeVisitId;
+import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -14,9 +15,11 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 
+@AllArgsConstructor
 @Service
 public class HistoryYtApiService {
 
+    private final YoutubeApiService youtubeApiService;
     public static final String ORIGINAL_HISTORY_PATH;
     public static final String COPIED_HISTORY_PATH;
 
@@ -46,6 +49,7 @@ public class HistoryYtApiService {
         for (YoutubeVisitId visit : visits) {
             String videoId = visit.getVideoId();
             // videoId를 가지고 YouTube API 요청
+            youtubeApiService.logVideoMetadata(videoId); // 호출
         }
 
     }

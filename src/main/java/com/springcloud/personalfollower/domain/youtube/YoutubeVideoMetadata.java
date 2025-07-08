@@ -22,6 +22,9 @@ public class YoutubeVideoMetadata {
     private String categoryId;
     private String publishedAt;
     private String thumbnailUrl;
+    private String description;
+    private String channelTitle;
+    private String categoryName;
     private List<String> nouns;
 
     private String visitedAt;  // 시청 시간

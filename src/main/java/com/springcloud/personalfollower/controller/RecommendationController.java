@@ -28,7 +28,7 @@ public class RecommendationController {
         }
 
         String userId = user.getEmail(); // 또는 getId(), getSub(), getName() 등
-        List<String> recommendations = recommendationService.recommendByUserId(userId, 5);
+        List<String> recommendations = recommendationService.recommendAndSave(userId, 5);
         return ResponseEntity.ok(recommendations);
     }
 }

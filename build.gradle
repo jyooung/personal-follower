@@ -19,8 +19,14 @@ configurations {
     }
 }
 
-repositories {
-    mavenCentral()
+ext {
+    set('springAiVersion', "1.0.0-RC1") // 또는 "1.0.0-M2"
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.ai:spring-ai-bom:${springAiVersion}"
+    }
 }
 
 dependencies {
@@ -50,11 +56,13 @@ dependencies {
     implementation 'org.openkoreantext:open-korean-text:2.1.0'
     implementation 'org.scala-lang:scala-library:2.12.10'
 
-    // GPT LLM 적용
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
+    // GPT LLM - 기존 OpenAI 연동
     implementation 'com.theokanning.openai-gpt3-java:service:0.18.2'
     implementation 'com.squareup.okhttp3:okhttp:4.9.3'
+
+    // ✅ Spring AI starters (자동으로 core 포함)
+    implementation "org.springframework.ai:spring-ai-starter-model-openai:${springAiVersion}"
+    implementation "org.springframework.ai:spring-ai-starter-vector-store-qdrant:${springAiVersion}"
 }
 
 tasks.named('test') {

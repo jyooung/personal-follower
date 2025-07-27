@@ -9,10 +9,8 @@ import com.theokanning.openai.service.OpenAiService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
+import java.util.Collections;
+import java.util.List;
 
 @Service
 public class GptService {
@@ -25,21 +23,29 @@ public class GptService {
     }
 
     /**
-     * 관심 카테고리를 1개 이상 받아 GPT에게 추천 키워드를 JSON 배열로 요청합니다.
-     * @param categories 관심 카테고리 (보통 1개씩 요청)
-     * @return 추천 키워드 리스트
+     * 관심 카테고리 및 유사 키워드를 기반으로 GPT에게 추천 키워드를 요청합니다.
+     * @param combinedKeywords 관심 키워드 + 유사 키워드 목록
+     * @return 추천 키워드 리스트 (최대 3개)
      */
-    public List<String> recommendKeywords(List<String> categories) {
+    /**
+     * 관심 카테고리 및 유사 키워드를 기반으로 GPT에게 추천 키워드를 요청합니다.
+     * @param combinedKeywords 관심 키워드 + 유사 키워드 목록
+     * @return 추천 키워드 리스트 (최대 3개)
+     */
+    public List<String> recommendKeywords(List<String> combinedKeywords) {
+        String joined = String.join(", ", combinedKeywords);
+
         String prompt = String.format("""
-            너는 유튜브 추천 시스템이야.
-            사용자의 관심 카테고리는 다음과 같아: %s
-        
-            이 카테고리를 기반으로 오늘 보면 좋을 유튜브 영상 키워드 3개를 추천해줘.
-            형식은 무조건 다음처럼 JSON 배열만 줘야 해. 설명 절대 하지마.
-        
+            너는 유튜브 추천 키워드를 생성하는 추천 시스템이야.
+            사용자의 관심 키워드와 이와 유사한 키워드는 다음과 같아:
+            [%s]
+
+            위 키워드를 참고해서 오늘 보면 좋을 유튜브 영상 주제 키워드 3개를 추천해줘. 최근 유행도 반영해도 좋아.
+            형식은 반드시 JSON 배열로 줘. 예시는 아래와 같아. 설명 붙이지 마.
+
             예시:
             ["감정 조절", "마케팅 심리학", "무의식 설득"]
-        """, String.join(", ", categories));
+        """, joined);
 
         ChatMessage systemMessage = new ChatMessage("system", prompt);
         ChatCompletionRequest request = ChatCompletionRequest.builder()
@@ -52,7 +58,7 @@ public class GptService {
             ChatCompletionResult result = openAiService.createChatCompletion(request);
             String jsonResponse = result.getChoices().get(0).getMessage().getContent();
 
-            // GPT 응답을 JSON 배열로 파싱
+            // JSON 파싱
             return objectMapper.readValue(jsonResponse, new TypeReference<>() {});
         } catch (Exception e) {
             System.err.println("GPT 응답 파싱 실패: " + e.getMessage());

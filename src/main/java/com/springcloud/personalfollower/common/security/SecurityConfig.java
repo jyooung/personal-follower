@@ -16,6 +16,15 @@ public class SecurityConfig {
     // OAuth2 이후 사용자 DB 처리를 담당할 서비스 주입
     private final CustomOAuth2UserService customOAuth2UserService;
 
+    /**
+     * Configures the Spring Security filter chain to require authentication for all requests and sets up OAuth2 login with a custom OIDC user service.
+     *
+     * All HTTP requests require authentication. OAuth2 login is enabled, and upon successful authentication, users are always redirected to the "/welcome" endpoint. User information from OIDC providers is processed using the injected custom OAuth2 user service.
+     *
+     * @param http the {@link HttpSecurity} to configure
+     * @return the configured {@link SecurityFilterChain}
+     * @throws Exception if an error occurs during security configuration
+     */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http

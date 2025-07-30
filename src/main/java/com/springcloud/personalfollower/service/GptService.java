@@ -27,11 +27,6 @@ public class GptService {
      * @param combinedKeywords 관심 키워드 + 유사 키워드 목록
      * @return 추천 키워드 리스트 (최대 3개)
      */
-    /**
-     * 관심 카테고리 및 유사 키워드를 기반으로 GPT에게 추천 키워드를 요청합니다.
-     * @param combinedKeywords 관심 키워드 + 유사 키워드 목록
-     * @return 추천 키워드 리스트 (최대 3개)
-     */
     public List<String> recommendKeywords(List<String> combinedKeywords) {
         String joined = String.join(", ", combinedKeywords);
 

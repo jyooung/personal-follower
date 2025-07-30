@@ -5,13 +5,12 @@ import com.springcloud.personalfollower.domain.recommend.UserRecommendLog;
 import com.springcloud.personalfollower.repository.GlobalCategoryLinksRepository;
 import com.springcloud.personalfollower.repository.UserRecommendLogRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.qdrant.QdrantVectorStore;
 import org.springframework.stereotype.Service;
-import org.springframework.ai.document.Document;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -39,7 +38,6 @@ public class RecommendationService {
 
         if (inputCategories.isEmpty()) return List.of("추천할 관심 카테고리가 없습니다.");
 
-        Map<String, List<String>> categoryToRecommended = new HashMap<>();
         List<String> allRecommended = new ArrayList<>();
 
         for (String category : inputCategories) {
@@ -67,10 +65,9 @@ public class RecommendationService {
 
             vectorStore.add(newDocs);
 
-            categoryToRecommended.put(category, recs);
             allRecommended.addAll(recs);
 
-            // 🔹 글로벌 통계 저장
+            // 글로벌 통계 저장
             GlobalCategoryLinks doc = globalRepo.findById(category).orElse(new GlobalCategoryLinks());
             doc.setBaseCategory(category);
 
@@ -83,7 +80,7 @@ public class RecommendationService {
             globalRepo.save(doc);
         }
 
-        // 🔹 사용자 로그 저장
+        // 사용자 로그 저장
         UserRecommendLog log = new UserRecommendLog();
         log.setUserId(userId);
         log.setInputCategories(inputCategories);

@@ -1,14 +1,18 @@
 package com.springcloud.personalfollower.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.springcloud.personalfollower.dto.request.YoutubeVisit;
+import com.springcloud.personalfollower.dto.response.YoutubeMetadata;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.channels.FileChannel;
 import java.sql.*;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 public class HistoryYtDlpService {
@@ -33,57 +37,123 @@ public class HistoryYtDlpService {
         COPIED_HISTORY_PATH = path + "_copy";
     }
 
-    public void extractHistory() throws IOException, ClassNotFoundException, SQLException {
-        // 1. 사용 중인 Chrome 방문기록 DB는 직접 열 수 없으므로, 안전하게 분석하기 위해 원본 DB를 복사해서 사용
+    public void runYoutubeExtraction() throws Exception {
+        // 크롬 방문기록에서 유튜브 방문기록만 추출해서 visits 리스트에 YoutubeVisit 형태로 저장
+        List<YoutubeVisit> visits = extractYoutubeHistoryFromChrome();
+        System.out.println("유튜브 방문기록 추출 완료");
+
+        // 반복문으로 유튜브 영상마다 메타데이터 요청
+        for (YoutubeVisit visit : visits) {
+            fetchVideoDetails(visit).ifPresent(meta -> {
+                // 💾 나중에 MongoDB에 저장할 부분
+                System.out.println("Date: " + meta.watchedAt());
+                System.out.println("Title: " + meta.title());
+                System.out.println("Thumbnail: " + meta.thumbnail());
+                System.out.println("Categories: " + meta.categories());
+                System.out.println("Tags: " + meta.tags());
+                System.out.println();
+            });
+        }
+    }
+
+    // 유튜브 방문기록을 크롬의 히스토리 DB에서 추출해 리스트로 반환하는 메서드
+    public List<YoutubeVisit> extractYoutubeHistoryFromChrome() throws Exception {
+        // 최종 결과를 담을 리스트 생성
+        List<YoutubeVisit> results = new ArrayList<>();
+
+        // 1. 크롬이 현재 사용 중인 방문기록 DB는 잠겨 있어서 바로 접근 불가
+        //    복사본을 만들어 분석에 사용
         copyDatabase(new File(ORIGINAL_HISTORY_PATH), new File(COPIED_HISTORY_PATH));
 
-        // 2. SQLite JDBC 드라이버를 로드 (클래스가 메모리에 적재되어야 DB 연결 가능)
+        // 2. SQLite JDBC 드라이버를 메모리에 로드 (이걸 해야 DB 연결 가능)
         Class.forName("org.sqlite.JDBC");
 
         // 3. 복사된 SQLite DB에 연결
-        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + COPIED_HISTORY_PATH);
-             Statement stmt = conn.createStatement()) {
-
-            // 3-1. DB가 잠긴 경우를 대비해 5초간 대기 설정
+        try (
+                Connection conn = DriverManager.getConnection("jdbc:sqlite:" + COPIED_HISTORY_PATH);
+                Statement stmt = conn.createStatement()
+        ) {
+            // 3-1. 다른 앱이 DB를 잠그고 있을 경우를 대비해, 최대 5초간 대기 설정
             stmt.execute("PRAGMA busy_timeout = 5000;");
 
-            // 4. 조회 기준 시간 계산
-            //    - 크롬의 방문 기록은 1601년 1월 1일을 기준으로 마이크로초 단위로 저장됨
-            //    - Unix epoch 기준(1970년)으로부터 1601년까지의 시간: 11644473600000L ms
-            //    - 현재 시간에서 7일 전을 계산하고 크롬 포맷(마이크로초)으로 변환
-            long DaysAgoMillis = System.currentTimeMillis() - (7L * 24 * 60 * 60 * 1000);
-            long visitTimeMicro = (DaysAgoMillis + 11644473600000L) * 1000;
+            // 4. 7일 전의 시간 기준을 계산
+            //    - Chrome은 1601년부터의 마이크로초로 시간을 저장함
+            //    - 1970년부터의 시간으로 계산된 현재 시간을 Chrome 포맷으로 변환
+            long visitTimeThreshold = (System.currentTimeMillis() - 7L * 24 * 60 * 60 * 1000 + 11644473600000L) * 1000;
 
-            // 5. 최근 N일간의 전체 방문 기록 조회 (유튜브 필터링은 자바에서 따로 수행)
-            String query = "SELECT urls.url, visits.visit_time " +
-                    "FROM urls INNER JOIN visits ON urls.id = visits.url " +
-                    "WHERE visits.visit_time > " + visitTimeMicro + " " +
-                    "ORDER BY visits.visit_time ASC";
+            // 5. 방문기록에서 최근 7일간의 URL과 방문시간을 조회하는 쿼리 작성
+            String query =
+                    "SELECT urls.url, visits.visit_time " +
+                            "FROM urls INNER JOIN visits ON urls.id = visits.url " +
+                            "WHERE visits.visit_time > " + visitTimeThreshold;
 
+            // 6. 쿼리 실행
             ResultSet rs = stmt.executeQuery(query);
-            // 날짜 형식 변환용
+
+            // 날짜 출력을 위해 포맷터 생성 (예: 2024-06-29 20:35:00 형식)
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
-            // 6. 결과 출력
+            // 7. 결과를 반복하며 유튜브 주소만 필터링
             while (rs.next()) {
                 String url = rs.getString("url");
-                // 유튜브 주소만 필터링
-                if (url.contains("youtube.com") || url.contains("youtu.be")) {
-                    long visitTimeMicroSec = rs.getLong("visit_time");
-                    // 크롬 시간 형식을 일반 시간(ms)로 변환
-                    long visitTimeMillis = (visitTimeMicroSec / 1000L) - 11644473600000L;
-                    // 날짜 포맷 변경
-                    String formatted = sdf.format(new Date(visitTimeMillis));
-                    // 콘솔 출력
-                    System.out.println("[YouTube] " + formatted + " - " + url);
+
+                // 유튜브 동영상 URL인 경우만 필터링 (shorts는 아직 제외)
+                if (url.contains("youtube.com/watch?v=") || url.contains("youtu.be/")) {
+                    long chromeTime = rs.getLong("visit_time");
+
+                    // 크롬의 시간 포맷(마이크로초) → 일반 시간 포맷(밀리초) 변환
+                    long millis = chromeTime / 1000L - 11644473600000L;
+
+                    // 변환한 시간을 보기 좋게 문자열로 포맷
+                    String formatted = sdf.format(new Date(millis));
+
+                    // url과 시청 시간을 YoutubeVisit 객체로 만들어 결과 리스트에 추가
+                    results.add(new YoutubeVisit(url, formatted));
                 }
             }
+        }
 
-            System.out.println("최근 7일간 유튜브 방문기록 출력 완료");
+        // 유튜브 방문기록 목록 반환
+        return results;
+    }
 
-        } catch (SQLException e) {
-            System.out.println("SQLite 오류: " + e.getMessage());
-            throw e;
+    // yt-dlp를 이용해 YouTube URL의 메타데이터를 요청하고 파싱하는 메서드
+    public Optional<YoutubeMetadata> fetchVideoDetails(YoutubeVisit visit) {
+        try {
+            // yt-dlp 명령어 설정: 크롬 쿠키 직접 추출
+            ProcessBuilder pb = new ProcessBuilder("yt-dlp", "-j", "--cookies-from-browser", "chrome", visit.url());
+            pb.redirectErrorStream(true); // 에러 스트림도 같이 읽기
+
+            Process process = pb.start();
+
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                StringBuilder jsonOutput = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    jsonOutput.append(line);
+                }
+
+                int exitCode = process.waitFor();
+                if (exitCode != 0 || jsonOutput.isEmpty()) {
+                    System.out.println("🚫 로그인 필요한 영상 또는 에러 발생: " + visit.url());
+                    return Optional.empty();
+                }
+
+                ObjectMapper mapper = new ObjectMapper();
+                JsonNode json = mapper.readTree(jsonOutput.toString());
+
+                return Optional.of(new YoutubeMetadata(
+                        visit.watchedAt(),
+                        visit.url(),
+                        json.path("title").asText(),
+                        json.path("thumbnail").asText(),
+                        json.path("categories").toString(),
+                        json.path("tags").toString()
+                ));
+            }
+        } catch (Exception e) {
+            System.out.println("yt-dlp 오류: " + e.getMessage());
+            return Optional.empty();
         }
     }
 

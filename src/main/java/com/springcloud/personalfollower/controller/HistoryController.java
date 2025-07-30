@@ -1,6 +1,7 @@
 package com.springcloud.personalfollower.controller;
 
 import com.springcloud.personalfollower.common.response.ResponseDto;
+import com.springcloud.personalfollower.service.HistoryYtApiService;
 import com.springcloud.personalfollower.service.HistoryYtDlpService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -14,15 +15,32 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/api/history")
 public class HistoryController {
     private final HistoryYtDlpService historyYtDlpService;
+    private final HistoryYtApiService historyYtApiService;
     /**
      * 브라우저 히스토리를 추출
      * @return 성공 또는 실패 메시지
      * historyYtDlpService yt-dlp 버전 (이후 전환)
      */
-    @GetMapping("/extract")
-    public ResponseEntity<ResponseDto<String>> extractHistory() {
+    @GetMapping("/extract/ytdlp")
+    public ResponseEntity<ResponseDto<String>> extractHistoryYtDlp() {
         try {
-            historyYtDlpService.extractHistory();
+            historyYtDlpService.runYoutubeExtraction();
+            return ResponseEntity.status(HttpStatus.OK).body(ResponseDto.success("success"));
+
+        } catch (Exception e){
+            return ResponseEntity.status(500).body(ResponseDto.failure("Failed to extract browser history: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * 브라우저 히스토리를 추출
+     * @return 성공 또는 실패 메시지
+     * historyYtDlpService yt-dlp 버전 (이후 전환)
+     */
+    @GetMapping("/extract/ytapi")
+    public ResponseEntity<ResponseDto<String>> extractHistoryYtApi() {
+        try {
+            historyYtApiService.runYoutubeExtraction();
             return ResponseEntity.status(HttpStatus.OK).body(ResponseDto.success("success"));
 
         } catch (Exception e){

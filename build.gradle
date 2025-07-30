@@ -19,8 +19,14 @@ configurations {
     }
 }
 
-repositories {
-    mavenCentral()
+ext {
+    set('springAiVersion', "1.0.0-RC1") // 또는 "1.0.0-M2"
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.ai:spring-ai-bom:${springAiVersion}"
+    }
 }
 
 dependencies {
@@ -42,6 +48,21 @@ dependencies {
 
     // SQLite JDBC 라이브러리
     implementation 'org.xerial:sqlite-jdbc:3.45.2.0'
+
+    // mongoDB
+    implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
+
+    // 명사분석 OpenKoreanText(내부에서 스칼라 사용 설치 필요)
+    implementation 'org.openkoreantext:open-korean-text:2.1.0'
+    implementation 'org.scala-lang:scala-library:2.12.10'
+
+    // GPT LLM - 기존 OpenAI 연동
+    implementation 'com.theokanning.openai-gpt3-java:service:0.18.2'
+    implementation 'com.squareup.okhttp3:okhttp:4.9.3'
+
+    // ✅ Spring AI starters (자동으로 core 포함)
+    implementation "org.springframework.ai:spring-ai-starter-model-openai:${springAiVersion}"
+    implementation "org.springframework.ai:spring-ai-starter-vector-store-qdrant:${springAiVersion}"
 }
 
 tasks.named('test') {
